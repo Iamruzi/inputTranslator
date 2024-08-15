@@ -41,12 +41,14 @@
 
 默认使用谷歌（免费，哈哈😁），其他接口，函数写好了，自己解决token之类的东西。
 
-## ▶ 演示视频
+## ▶ 演示
 
 <video controls>
   <source src="img/demo.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
+
+![Animated GIF](img/demo.gif)
 
 ## ❤ 实现原理
 
