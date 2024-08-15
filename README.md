@@ -1,6 +1,8 @@
-# inputTranslator 实时输入翻译小助手
+# inputTranslator 输入翻译小助手 💁
 
-输入翻译助手，你只需要触发热键（例如大键盘右侧的Ctrl），即可轻松编辑框中内容翻译成指定语言
+输入翻译助手，你只需要触发热键（例如大键盘右侧的Ctrl），即可轻松编辑框中内容翻译成指定语言。
+
+节省你跨软件操作的时间。和异国友人轻松对话。
 
 ![image](img/app_run.png)
 
@@ -41,15 +43,16 @@
 
 ## ❤ 实现原理
 
-监测用户键盘输入，当按下特定的热键后：
-
+实时检测用户键盘输入，当按下特定的热键后（如下图Ctrl）：
 
 ![image](img/big_keyboard_layout.png)
 
 
-- 全选当前编辑框中的内容，并复制到剪贴板。
-- 获取剪贴板中的内容，传给翻译接口，并翻译成指定语言。
-- 将翻译结果粘贴到当前光标位置。
+软件经历的流程
+
+- 1. 全选当前编辑框中的内容，并复制到剪贴板。
+- 2. 获取剪贴板中的内容，传给翻译接口，并翻译成指定语言。
+- 3. 将翻译结果粘贴到当前光标位置。
 
 ## 🛠 版本说明
 
@@ -65,14 +68,16 @@
 - **退出程序**: 按下 `Esc` 键退出程序。
 
 
-## 安装/运行说明
+## 安装/运行/打包说明
 
 ### 📦 库安装
 
 注意：googletrans 库版本可能会更新，如果遇到问题，请安装指定版本 4.0.0-rc1。
 ```bash
 # 主要依赖库
-pip install pynput pyperclip googletrans==4.0.0-rc1   
+pip install pynput pyperclip googletrans==4.0.0-rc1
+```
+```bash
 # 其他
 pip install requests tabulate art
 
@@ -83,6 +88,17 @@ pip install requests tabulate art
 ```bash
 python inputTranslator.py
 ```
+
+### 📦 打包执行文件方法
+```bash
+pip install pyinstaller
+```
+
+```bash
+pyinstaller --onefile inputTranslator.py
+```
+
+运行后，可以最小化到后端运行，不要关闭就可以了。
 
 ## 📜 版权声明
 
