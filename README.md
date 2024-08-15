@@ -41,6 +41,13 @@
 
 默认使用谷歌（免费，哈哈😁），其他接口，函数写好了，自己解决token之类的东西。
 
+## ▶ 演示视频
+
+<video controls>
+  <source src="img/demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## ❤ 实现原理
 
 实时检测用户键盘输入，当按下特定的热键后（如下图Ctrl）：
