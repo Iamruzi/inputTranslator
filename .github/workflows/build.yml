@@ -2,14 +2,12 @@
 
 name: Build and Release
 
-# 触发条件：当一个 'v*.*.*' 格式的标签被推送到仓库时
 on:
   push:
     tags:
       - 'v*.*.*'
-  workflow_dispatch: # 也允许在 Actions 页面手动触发
+  workflow_dispatch:
 
-# 为工作流授予创建 Release 的写入权限
 permissions:
   contents: write
 
@@ -49,8 +47,9 @@ jobs:
     - name: Set up uv
       uses: astral-sh/setup-uv@v1
 
+    # --- CORE FIX: Add --system flag to uv commands ---
     - name: Install dependencies
-      run: uv pip install -e . --system && uv pip install pyinstaller ttkbootstrap
+      run: uv pip install -e . --system && uv pip install pyinstaller ttkbootstrap --system
 
     - name: Install Linux system dependencies
       if: matrix.os_name == 'linux'
@@ -70,19 +69,16 @@ jobs:
           iconutil -c icns icon.iconset -o ${{ matrix.icon_filename }}
         fi
 
-    # --- 核心修改：修复了获取版本号的脚本 ---
     - name: Get Project Version
       id: get_version
       shell: bash
       run: |
-        # 使用 bash 更稳定地执行 python 命令并设置环境变量
         VERSION=$(python -c "import sys; sys.path.insert(0, 'src'); from input_translator import __version__; print(__version__)")
         echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Build with PyInstaller
       shell: bash
       run: |
-        # 使用上一步导出的环境变量
         FILE_NAME="input-translator-${{ matrix.os_name }}-${{ matrix.arch }}-v${{ env.APP_VERSION }}"
         PYINSTALLER_ARGS="--onefile --windowed run.py"
         if [[ "${{ matrix.os_name }}" == "windows" ]]; then PYINSTALLER_ARGS="$PYINSTALLER_ARGS --noupx"; fi
