@@ -1,0 +1,125 @@
+# .github/workflows/build.yml
+
+name: Build and Release
+
+# 触发条件：当一个 'v*.*.*' 格式的标签被推送到仓库时
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch: # 也允许在 Actions 页面手动触发
+
+# 为工作流授予创建 Release 的写入权限
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os_name }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_name: windows
+            runner: windows-latest
+            arch: x86_64
+            icon_filename: icon.ico
+            separator: ';'
+          - os_name: linux
+            runner: ubuntu-latest
+            arch: x86_64
+            icon_filename: ""
+            separator: ':'
+          - os_name: macos
+            runner: macos-14
+            arch: arm64
+            icon_filename: icon.icns
+            separator: ':'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v1
+
+    - name: Install dependencies
+      run: uv pip install -e . --system && uv pip install pyinstaller ttkbootstrap
+
+    - name: Install Linux system dependencies
+      if: matrix.os_name == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libappindicator3-dev tk
+
+    - name: Create Icon Formats from icon.png
+      if: hashFiles('icon.png') != ''
+      shell: bash
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          python -c "from PIL import Image; img = Image.open('icon.png'); img.save('${{ matrix.icon_filename }}', format='ICO', sizes=[(256,256)])"
+        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          mkdir icon.iconset
+          sips -z 16 16 icon.png --out icon.iconset/icon_16x16.png; sips -z 32 32 icon.png --out icon.iconset/icon_16x16@2x.png; sips -z 32 32 icon.png --out icon.iconset/icon_32x32.png; sips -z 64 64 icon.png --out icon.iconset/icon_32x32@2x.png; sips -z 128 128 icon.png --out icon.iconset/icon_128x128.png; sips -z 256 256 icon.png --out icon.iconset/icon_128x128@2x.png;
+          iconutil -c icns icon.iconset -o ${{ matrix.icon_filename }}
+        fi
+
+    # --- 核心修改：修复了获取版本号的脚本 ---
+    - name: Get Project Version
+      id: get_version
+      shell: bash
+      run: |
+        # 使用 bash 更稳定地执行 python 命令并设置环境变量
+        VERSION=$(python -c "import sys; sys.path.insert(0, 'src'); from input_translator import __version__; print(__version__)")
+        echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Build with PyInstaller
+      shell: bash
+      run: |
+        # 使用上一步导出的环境变量
+        FILE_NAME="input-translator-${{ matrix.os_name }}-${{ matrix.arch }}-v${{ env.APP_VERSION }}"
+        PYINSTALLER_ARGS="--onefile --windowed run.py"
+        if [[ "${{ matrix.os_name }}" == "windows" ]]; then PYINSTALLER_ARGS="$PYINSTALLER_ARGS --noupx"; fi
+        if [[ -n "${{ matrix.icon_filename }}" && -f "${{ matrix.icon_filename }}" ]]; then PYINSTALLER_ARGS="$PYINSTALLER_ARGS --icon=${{ matrix.icon_filename }}"; fi
+        if [[ -f "icon.png" ]]; then PYINSTALLER_ARGS="$PYINSTALLER_ARGS --add-data icon.png${{ matrix.separator }}."; fi
+        pyinstaller --name "${FILE_NAME}" $PYINSTALLER_ARGS
+
+    - name: Prepare Artifact for Upload
+      shell: bash
+      run: |
+        FILE_NAME="input-translator-${{ matrix.os_name }}-${{ matrix.arch }}-v${{ env.APP_VERSION }}"
+        ARTIFACT_DIR="artifact"
+        mkdir -p $ARTIFACT_DIR
+        if [[ "${{ matrix.os_name }}" == "macos" ]]; then
+          ditto -c -k --sequesterRsrc --keepParent "dist/${FILE_NAME}.app" "${ARTIFACT_DIR}/${FILE_NAME}.app.zip"
+        elif [[ "${{ matrix.os_name }}" == "windows" ]]; then
+          mv "dist/${FILE_NAME}.exe" "${ARTIFACT_DIR}/"
+        else
+          mv "dist/${FILE_NAME}" "${ARTIFACT_DIR}/"
+        fi
+
+    - name: Upload Artifact for Release
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact-${{ matrix.os_name }}-${{ matrix.arch }}
+        path: artifact/
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*

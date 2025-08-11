@@ -1,0 +1,25 @@
+# pyproject.toml
+
+[project]
+name = "input-translator"
+version = "1.0.2" # 您可以根据需要更新版本号
+description = "A tool to translate text directly in any input field, triggered by a hotkey."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pyperclip>=1.8.2",
+    "deep-translator>=1.11.4",
+    "pynput>=1.7.6",
+    "rich>=13.7.1",
+    "pyfiglet>=1.0.2",
+    "pystray>=0.19.0",
+    "Pillow>=10.2.0",
+    "ttkbootstrap>=1.10.1",
+]
+
+[project.scripts]
+input-translator = "input_translator.main:main"
+
+[tool.setuptools]
+packages = ["input_translator"]
+package-dir = {"" = "src"}
